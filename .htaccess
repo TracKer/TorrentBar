@@ -1,0 +1,5 @@
+Options +FollowSymLinks 
+
+RewriteEngine on
+RewriteRule ^(.*)/(.*).png$ torrentbar.php?id=$2 [L]
+RewriteRule ^(.*).png$ torrentbar.php?id=$1 [L]
