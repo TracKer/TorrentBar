@@ -1,3 +1,8 @@
+TorrentBar v0.3 for TorrentPier (2008-03-14)
+  - new engine
+  - new Templates subengine (Multilayer)
+  - added support for new TorrentPier versions
+
 TorrentBar v0.2 for TorrentPier (2007-08-20)
   - new Font engine
   - new Templates (Background and Reflection separately)

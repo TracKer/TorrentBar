@@ -1,5 +1,8 @@
 Options +FollowSymLinks 
 
 RewriteEngine on
-RewriteRule ^(.*)/(.*).png$ torrentbar.php?id=$2 [L]
-RewriteRule ^(.*).png$ torrentbar.php?id=$1 [L]
+RewriteRule ^([0123456789]*)-([0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_]*)\.png$ torrentbar.php?id=$1&style=$2 [L]
+RewriteRule ^(.*)/([0123456789]*)-([0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_]*)\.png$ torrentbar.php?id=$2&style=$3 [L]
+
+RewriteRule ^(.*)/([0123456789]*)\.png$ torrentbar.php?id=$2 [L]
+RewriteRule ^([0123456789]*)\.png$ torrentbar.php?id=$1 [L]

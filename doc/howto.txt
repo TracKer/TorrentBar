@@ -10,9 +10,8 @@ INSTALLATION in TorrentPier:
    or like this:
      $torrentpier_config_path = "../forum/config.php";
 
-3. (OPTIONAL) Create new template for your TorrentBar (bg.png and ref.png - must
-   be PNG 24bit) and modify X and Y offsets of digits output ($rating_x,
-   $rating_y, $upload_x, $upload_y, $download_x, $download_y).
+3. (OPTIONAL) Change some other variables in Presets area or view Templates folder
+   to create new templates.
 
 4. Installation Complete :)
 
@@ -27,13 +26,15 @@ After that, just put to your signature (on Forum):
     [img]http://127.0.0.1/torrentbar/torrentbar.php/USERID.png[/img]
   or
     [img]http://127.0.0.1/torrentbar/torrentbar.php?id=USERID[/img]
+    [img]http://127.0.0.1/torrentbar/torrentbar.php?id=USERID&style=STYLENAME[/img]
 
   (With .htaccess)
     [img]http://127.0.0.1/torrentbar/USERID.png[/img]
+    [img]http://127.0.0.1/torrentbar/USERID-STYLENAME.png[/img]
 
-where USERID is your ID on Forum. How to find out your ID? Easy :) Just Click
-on your Profile and look to the address bar:
-  http://127.0.0.1/torrentpier/forum/profile.php?mode=viewprofile&u=2
+where USERID is your ID on Forum and STYLEID is the name of template. How to find
+out your ID? Easy :) Just Click on your Profile and look to the address bar:
+    http://127.0.0.1/torrentpier/forum/profile.php?mode=viewprofile&u=2
 2 - is my ID.
 
 

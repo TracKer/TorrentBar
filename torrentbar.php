@@ -2,9 +2,9 @@
 //
 // Author: TracKer
 // E-Mail: tracker2k@gmail.com
-// Version 0.2 (Major.Minor.Revision)
+// Version 0.3.0 (Major.Minor.Revision)
 //
-// Copyright (C) 2006-2007  TracKer
+// Copyright (C) 2006-2008  TracKer
 // 
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,22 +46,11 @@
 //===========================================================================
 
 // Database Presets
-$torrentpier_config_path = "/home/localhost/www/torrentpier/forum/config.php";
+$torrentpier_config_path = "/home/test-torrent/www/forum/config.php";
 
 // Template Presrts
 $template_background = "./template/bg.png";
 $template_reflection = "./template/ref.png";
-
-// Output Presets
-$rating_x = 37;
-$rating_y = 6;
-
-$upload_x = 104;
-$upload_y = 6;
-
-$download_x = 198;
-$download_y = 6;
-
 
 $use_binary_prefixes = true;
 // true - Use Binary prefixes (KiB, MiB, etc)
@@ -91,107 +80,36 @@ function getParam() {
   return $res;
 }
 
-function mysql_init() {
-  global $dbhost, $dbname, $dbuser, $dbpasswd;
-  if ($dbpasswd!='') {
-    $link = @mysql_connect($dbhost, $dbuser, $dbpasswd) or die("Cannot connect to database!");
-  } else {
-    $link = @mysql_connect($dbhost, $dbuser) or die("Cannot connect to database!");
-  }
-  mysql_select_db($dbname) or die("Cannot select database!");
-  return $link;
-}
+function getStyle() {
+  $allowed_letters = "1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM_";
+  $max_length = 128;
 
-function ifthen($ifcondition, $iftrue, $iffalse) {
-  if ($ifcondition) {
-    return $iftrue;
-  } else {
-    return $iffalse;
-  }
-}
+  $res = 'default';
+  if (array_key_exists("style", $_REQUEST)) {
+    $s = substr($_REQUEST["style"], 0, $max_length);
 
-function getPostfix($val) {
-  global $use_binary_prefixes;
+    $allowed = true;
+    for ($i = 0; $i < strlen($s); $i++) {
+      $p = strpos($allowed_letters, $s[$i]);
+      if ($p === false) {
+        $allowed = false;
+        break;
+      }
+    }
 
-  $postfix = "B";
-  if ($use_binary_prefixes) {
-    if ($val>=1024)             { $postfix = "KiB"; }
-    if ($val>=1048576)          { $postfix = "MiB"; }
-    if ($val>=1073741824)       { $postfix = "GiB"; }
-    if ($val>=1099511627776)    { $postfix = "TiB"; }
-    if ($val>=1125899906842624) { $postfix = "PiB"; }
-    if ($val>=1152921504606846976)       { $postfix = "EiB"; }
-    if ($val>=1180591620717411303424)    { $postfix = "ZiB"; }
-    if ($val>=1208925819614629174706176) { $postfix = "YiB"; }
-  } else {
-    if ($val>=1000)             { $postfix = "KB"; }
-    if ($val>=1000000)          { $postfix = "MB"; }
-    if ($val>=1000000000)       { $postfix = "GB"; }
-    if ($val>=1000000000000)    { $postfix = "TB"; }
-    if ($val>=1000000000000000) { $postfix = "PB"; }
-    if ($val>=1000000000000000000)       { $postfix = "EB"; }
-    if ($val>=1000000000000000000000)    { $postfix = "ZB"; }
-    if ($val>=1000000000000000000000000) { $postfix = "YB"; }
+    if ($allowed) {
+      $res = $s;
+    }
   }
 
-  return $postfix;
-}
-
-function roundCounter($value, $postfix) {
-  $val = $value;
-  $p = strtolower($postfix);
-  switch ($p) {
-  case "kib": $val=$val / 1024;
-    break;
-  case "mib": $val=$val / 1048576;
-    break;
-  case "gib": $val=$val / 1073741824;
-    break;
-  case "tib": $val=$val / 1099511627776;
-    break;
-  case "pib": $val=$val / 1125899906842624;
-    break;
-  case "eib": $val=$val / 1152921504606846976;
-    break;
-  case "zib": $val=$val / 1180591620717411303424;
-    break;
-  case "yib": $val=$val / 1208925819614629174706176;
-    break;
-
-  case "kb": $val=$val / 1000;
-    break;
-  case "mb": $val=$val / 1000000;
-    break;
-  case "gb": $val=$val / 1000000000;
-    break;
-  case "tb": $val=$val / 1000000000000;
-    break;
-  case "pb": $val=$val / 1000000000000000;
-    break;
-  case "eb": $val=$val / 1000000000000000000;
-    break;
-  case "zb": $val=$val / 1000000000000000000000;
-    break;
-  case "yb": $val=$val / 1000000000000000000000000;
-    break;
-
-  default:
-    break;
-  }
-  return $val;
-}
-
-function iPostfix($change, $postfix) {
-  if ($change) {
-    return str_replace("i", chr(127), $postfix);
-  }
+  return $res;
 }
 
 function trck_BF_Load($name) {
   $res = 0;
 
-  $ini = @parse_ini_file($name.".ini");
-  $font = @imagecreatefrompng($name.".png");
+  $ini = parse_ini_file($name.".ini");
+  $font = imagecreatefrompng($name.".png");
 
   if (($ini) && ($font)) {
     $res = array();
@@ -325,102 +243,242 @@ function trck_BF_CreateTextWithStroke($font, $text) {
   return $im;
 }
 
+
+define('TorrentBar_csBinary', 1);
+define('TorrentBar_csSI', 2);
+
+class TorrentBar {
+
+  var $img = null;
+  var $font = null;
+
+  var $userID;
+  var $data = array();
+
+  var $system = TorrentBar_csBinary;
+
+  var $systems_data = array (
+    TorrentBar_csSI => array(
+      'b'  => array( 'name'=>'B',   'val'=>1),
+      'kb' => array( 'name'=>'KB',  'val'=>1000),
+      'mb' => array( 'name'=>'MB',  'val'=>1000000),
+      'gb' => array( 'name'=>'GB',  'val'=>1000000000),
+      'tb' => array( 'name'=>'TB',  'val'=>1000000000000),
+      'pb' => array( 'name'=>'PB',  'val'=>1000000000000000),
+      'eb' => array( 'name'=>'EB',  'val'=>1000000000000000000),
+      'zb' => array( 'name'=>'ZB',  'val'=>1000000000000000000000),
+      'yb' => array( 'name'=>'YB',  'val'=>1000000000000000000000000)
+    ),
+
+    TorrentBar_csBinary => array(
+      'b'   => array( 'name'=>'B',   'val'=>1),
+      'kib' => array( 'name'=>'KiB', 'val'=>1024),
+      'mib' => array( 'name'=>'MiB', 'val'=>1048576),
+      'gib' => array( 'name'=>'GiB', 'val'=>1073741824),
+      'tib' => array( 'name'=>'TiB', 'val'=>1099511627776),
+      'pib' => array( 'name'=>'PiB', 'val'=>1125899906842624),
+      'eib' => array( 'name'=>'EiB', 'val'=>1152921504606846976),
+      'zib' => array( 'name'=>'ZiB', 'val'=>1180591620717411303424),
+      'yib' => array( 'name'=>'YiB', 'val'=>1208925819614629174706176)
+    )
+  );
+
+  function TorrentBar($user_id, $path_to_baselayerImage = '') {
+    if ($path_to_baselayerImage != '') {
+      $this->createBaseLayer($path_to_baselayerImage);
+    }
+
+    if ($user_id <= 0) {
+
+      $this->throwException(__FUNCTION__, 1,  'user_id <= 0');
+    }
+    $this->userID = $user_id;
+    $this->getInfo();
+  }
+
+  function changeSystem($system) {
+    $this->system = $system;
+  }
+
+  function createBaseLayer($path_to_baselayerImage) {
+    // if not exist throw exception
+    $this->img = @imagecreatefrompng($path_to_baselayerImage) or $this->throwException(__FUNCTION__, 2,  'Can\'t create base layer image');
+    //imageAlphaBlending($this->img, true);
+    imageSaveAlpha($this->img, true);
+  }
+
+  function drawLayer($path_to_layerImage, $x = 0, $y = 0) {
+    $layer = @imagecreatefrompng($path_to_layerImage) or $this->throwException(__FUNCTION__, 3,  'Can\'t create layer image');
+    @imagecopy($this->img, $layer, $x, $y, 0, 0, imagesx($layer), imagesy($layer)) or $this->throwException(__FUNCTION__, 4,  'Can\'t copy layer image to base layer image');
+    @imagedestroy($layer) or $this->throwException(__FUNCTION__, 5,  'Can\'t destroy temporary layer image');
+  }
+
+  function legacy_initFont($path_to_font) {
+    $this->font = trck_BF_Load($path_to_font);
+  }
+
+  function getInfo() {
+    global $table_prefix;
+    $this->mysql_init();
+
+    $query = "SELECT count(user_id) FROM " . $table_prefix . "users WHERE user_id = " . $this->userID;
+    $result = @mysql_query($query) or $this->throwException(__FUNCTION__, 6,  'Can\'t select data');
+    $counter = @mysql_result($result, 0) or $this->throwException(__FUNCTION__, 7,  'Can\'t get result data');
+    mysql_free_result($result);
+
+    if ($counter > 0) {
+      $query = "SELECT u_up_total, u_down_total, u_up_release, u_up_bonus FROM " . $table_prefix . "bt_users WHERE user_id = " . $this->userID;
+      $result = mysql_query($query) or $this->throwException(__FUNCTION__, 8,  'Can\'t select data');
+
+      while ($data = mysql_fetch_array($result))
+      {
+        $this->data['upload_counter'] = $data['u_up_total'];
+        $this->data['download_counter'] = $data['u_down_total'];
+        $this->data['release_counter'] = $data['u_up_release'];
+        $this->data['bonus_counter'] = $data['u_up_bonus'];
+        $this->data['rating_counter'] = 0;
+        if ($this->data['download_counter'] > 0) {
+          $this->data['rating_counter'] = ($this->data['upload_counter'] +
+            $this->data['bonus_counter'] +
+            $this->data['release_counter']) /
+            $this->data['download_counter'];
+        }
+      }
+    }
+  }
+
+  function mysql_init() {
+    global $dbhost, $dbname, $dbuser, $dbpasswd;
+
+    //echo $dbhost ."<br>". $dbname ."<br>". $dbuser ."<br>". $dbpasswd;
+    if ($dbpasswd!='') {
+      $link = @mysql_connect($dbhost, $dbuser, $dbpasswd) or $this->throwException(__FUNCTION__, 9,  'Can\'t connect to database');
+    } else {
+      $link = @mysql_connect($dbhost, $dbuser) or $this->throwException(__FUNCTION__, 10,  'Can\'t connect to database');
+    }
+    @mysql_select_db($dbname) or $this->throwException(__FUNCTION__, 11,  'Can\'t select database');
+    return $link;
+  }
+
+  function getPostfixID($val) {
+    $res = 'b';
+    foreach ($this->systems_data[$this->system] as $key=>$data) {
+      //echo $key .'---'. $data ."!!!";
+      if ($val >= $data['val']) {
+        //return $key;
+        $res = $key;
+      } else {
+        break;
+      }
+    }
+    return $res;
+  }
+
+  function getPostfixName($postfix_id) {
+    //echo  $this->systems_data[$this->system][$postfix_id]['name'];
+    return $this->systems_data[$this->system][$postfix_id]['name'];
+  }
+
+  function roundValue($val) {
+    $dot_pos = strpos((string) $val, ".");
+    if ($dot_pos > 0) {
+        return (string) round(substr((string) $val, 0, $dot_pos+1+2), 2);
+    } else {
+      return (string) $val;
+    }
+  }
+
+  function convertValue($val) {
+    $postfix_id = $this->getPostfixID($val);
+    return $val / $this->systems_data[$this->system][$postfix_id]['val'];
+  }
+
+  function drawText($x, $y, $text) {
+    $img = trck_BF_CreateTextWithStroke($this->font, $text);
+    @imagecopy($this->img, $img, $x, $y, 0, 0, imagesx($img), imagesy($img)) or $this->throwException(__FUNCTION__, 12,  'Can\'t copy temporary image to base layer image');
+  }
+
+  function drawRating($x, $y) {
+    $val = $this->roundValue($this->data['rating_counter']);
+    $val = strval($val);
+    $this->drawText($x, $y, $val);
+  }
+
+  function drawUpload($x, $y, $draw_postfix = true) {
+    $postfix_id = $this->getPostfixID($this->data['upload_counter']);
+    $val = $this->convertValue($this->data['upload_counter']);
+    $val = $this->roundValue($val);
+
+    $val = strval($val);
+    if ($draw_postfix) {
+      $val .= " " . $this->getPostfixName($postfix_id);
+    }
+    $this->drawText($x, $y, $val);
+  }
+
+  function drawDownload($x, $y, $draw_postfix = true) {
+    $postfix_id = $this->getPostfixID($this->data['download_counter']);
+    $val = $this->convertValue($this->data['download_counter']);
+    $val = $this->roundValue($val);
+
+    $val = strval($val);
+    if ($draw_postfix) {
+      $val .= " " . $this->getPostfixName($postfix_id);
+    }
+    $this->drawText($x, $y, $val);
+  }
+
+  function useTemplate($template_name) {
+    $allowed_letters = '1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm_';
+
+    if (! file_exists('templates/' . $template_name)) {
+      $this->throwException(__FUNCTION__, 13,  'Template is not exist');
+    }
+
+    for ($i = 0; $i < strlen($template_name); $i++) {
+      $pos = strpos($allowed_letters, $template_name[$i]);
+
+      if ($pos === false) {
+        $this->throwException(__FUNCTION__, 14,  'Template name is not allowed');
+      }
+    }
+
+    return 'templates/' . $template_name . '/template.php';
+  }
+
+  function Finalize() {
+    header("Content-type: image/png");// or $this->throwException(__FUNCTION__, 15,  'Can\'t send header');
+    @imagepng($this->img) or $this->throwException(__FUNCTION__, 16,  'Can\'t output image');
+    @imagedestroy($this->img) or $this->throwException(__FUNCTION__, 17,  'Can\'t destroy image');
+    //trck_BF_Unload($this->font);
+  }
+
+  function changePostfixName($postfixID, $newName) {
+    if (! isset($this->systems_data[$this->system][$postfixID])) {
+      //throw Exception (Not exists)
+      return null;
+    }
+    $this->systems_data[$this->system][$postfixID]['name'] = $newName;
+  }
+
+  function throwException($function, $code, $message) {
+    //$E = new Exception('TorrentBar exception in ' . $function . ': ' . $message, $code);
+    //throw $E;
+    die('TorrentBar exception in ' . $function . ': ' . $message . ' (Code: ' . $code . ')');
+  }
+}
+
 //===========================================================================
 // Main body
 //===========================================================================
 
-// Template initialization - begin
-$im_tpl_bg = @imagecreatefrompng($template_background) or die("Background Template not found!");
-$im_tpl_ref = @imagecreatefrompng($template_reflection) or die("Reflection Template not found!");
-// Template initialization - end
+$user_id = getParam();
+$style_id = getStyle();
 
-$font = trck_BF_Load("./font/visitor_rus");
-if ($space_width > 0) {
-  trck_BF_setLetterWidth($font, " ", $space_width);
-}
+define('BB_ROOT', '1');
+include($torrentpier_config_path);
 
-
-$download_counter = 0;
-$upload_counter = 0;
-$rating_counter = 0;
-
-
-
-$im = @imagecreatetruecolor(350, 19) or die("Cannot Initialize new GD image stream");
-imagecopy($im, $im_tpl_bg, 0, 0, 0, 0, imagesx($im_tpl_bg), imagesy($im_tpl_bg));
-imagedestroy($im_tpl_bg);
-
-$userid = getParam();
-if ($userid!="") {
-  include($torrentpier_config_path);
-  mysql_init();
-
-  $query = "SELECT count(user_id) FROM phpbb_users WHERE user_id = '".$userid."'";
-  $result = @mysql_query($query);// or die("Could not select data!");
-  $counter = mysql_result($result, 0);
-  mysql_free_result($result);
-    
-  if ($counter>0) {
-    $query = "SELECT u_up_total, u_down_total FROM phpbb_bt_users WHERE user_id = ".$userid;
-    $result = mysql_query($query);// or die("Could not select data!");
-
-    while ($data = mysql_fetch_array($result))
-    {
-      $upload_counter = $data['u_up_total'];
-      $download_counter = $data['u_down_total'];
-      if ($download_counter>0) {
-        $rating_counter = $upload_counter / $download_counter;
-      }
-    }
-  }
-}
-
-$dot_pos = strpos((string) $rating_counter, ".");
-if ($dot_pos>0) {
-  $rating_counter = (string) round(substr((string) $rating_counter, 0, $dot_pos+1+2), 2);
-} else {
-  $rating_counter = (string) $rating_counter;
-}
-
-$rating_counter = strval($rating_counter);
-$im_rating = trck_BF_CreateTextWithStroke($font, $rating_counter);
-imagecopy($im, $im_rating, $rating_x, $rating_y-2, 0, 0, imagesx($im_rating), imagesy($im_rating));
-
-
-
-$postfix = getPostfix($upload_counter);
-$upload_counter = roundCounter($upload_counter, $postfix);
-$dot_pos = strpos((string) $upload_counter, ".");
-if ($dot_pos>0) {
-  $upload_counter = (string) round(substr((string) $upload_counter, 0, $dot_pos+1+2), 2);
-} else {
-  $upload_counter = (string) $upload_counter;
-}
-
-$upload_counter = strval($upload_counter)." ".iPostfix($binary_i_with_point, $postfix); 
-$im_upload = trck_BF_CreateTextWithStroke($font, $upload_counter);
-imagecopy($im, $im_upload, $upload_x, $upload_y-2, 0, 0, imagesx($im_upload), imagesy($im_upload));
-
-
-
-$postfix = getPostfix($download_counter);
-$download_counter = roundCounter($download_counter, $postfix);
-$dot_pos = strpos((string) $download_counter, ".");
-if ($dot_pos>0) {
-  $download_counter = (string) round(substr((string) $download_counter, 0, $dot_pos+1+2), 2);
-} else {
-  $download_counter = (string) $download_counter;
-}
-
-$download_counter = strval($download_counter)." ".iPostfix($binary_i_with_point, $postfix);
-$im_download = trck_BF_CreateTextWithStroke($font, $download_counter);
-imagecopy($im, $im_download, $download_x, $download_y-2, 0, 0, imagesx($im_download), imagesy($im_download));
-
-trck_BF_Unload($font);
-
-imagecopy($im, $im_tpl_ref, 0, 0, 0, 0, imagesx($im_tpl_ref), imagesy($im_tpl_ref));
-imagedestroy($im_tpl_ref);
-
-header("Content-type: image/png");
-imagepng($im);
-imagedestroy($im);
+$torrentbar = new TorrentBar($user_id);
+$template = $torrentbar->useTemplate($style_id);
+include $template;
+$torrentbar->Finalize();
