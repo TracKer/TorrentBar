@@ -8,7 +8,7 @@ $torrentbar->legacy_initFont($location . 'fonts/visitor_rus');
 $torrentbar->createBaseLayer($location . 'images/baselayer.png');
 
 if (! $use_binary_prefixes) {
-  $torrentbar->changeSystem(TorrentBar_csSI);
+  $torrentbar->changeSystem(TorrentBar::csSI);
 } else {
   if ($binary_i_with_point) {
     $torrentbar->changePostfixName('kib', 'K' . chr(127) . 'B');

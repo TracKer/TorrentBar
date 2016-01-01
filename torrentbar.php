@@ -2,7 +2,7 @@
 //
 // Author: TracKer
 // E-Mail: tracker2k@gmail.com
-// Version 0.3.0 (Major.Minor.Revision)
+// Version 0.3.1 (Major.Minor.Revision)
 //
 // Copyright (C) 2006-2008  TracKer
 // 
@@ -244,21 +244,21 @@ function trck_BF_CreateTextWithStroke($font, $text) {
 }
 
 
-define('TorrentBar_csBinary', 1);
-define('TorrentBar_csSI', 2);
-
 class TorrentBar {
 
-  var $img = null;
-  var $font = null;
+  public $img = null;
+  public $font = null;
 
-  var $userID;
-  var $data = array();
+  private $userID;
+  private $data = array();
 
-  var $system = TorrentBar_csBinary;
+  const csBinary = 1;
+  const csSI = 2;
 
-  var $systems_data = array (
-    TorrentBar_csSI => array(
+  private $system = TorrentBar::csBinary;
+
+  public $systems_data = array (
+    TorrentBar::csSI => array(
       'b'  => array( 'name'=>'B',   'val'=>1),
       'kb' => array( 'name'=>'KB',  'val'=>1000),
       'mb' => array( 'name'=>'MB',  'val'=>1000000),
@@ -270,7 +270,7 @@ class TorrentBar {
       'yb' => array( 'name'=>'YB',  'val'=>1000000000000000000000000)
     ),
 
-    TorrentBar_csBinary => array(
+    TorrentBar::csBinary => array(
       'b'   => array( 'name'=>'B',   'val'=>1),
       'kib' => array( 'name'=>'KiB', 'val'=>1024),
       'mib' => array( 'name'=>'MiB', 'val'=>1048576),
@@ -283,7 +283,7 @@ class TorrentBar {
     )
   );
 
-  function TorrentBar($user_id, $path_to_baselayerImage = '') {
+  public function __construct($user_id, $path_to_baselayerImage = '') {
     if ($path_to_baselayerImage != '') {
       $this->createBaseLayer($path_to_baselayerImage);
     }
@@ -296,28 +296,28 @@ class TorrentBar {
     $this->getInfo();
   }
 
-  function changeSystem($system) {
+  public function changeSystem($system) {
     $this->system = $system;
   }
 
-  function createBaseLayer($path_to_baselayerImage) {
+  public function createBaseLayer($path_to_baselayerImage) {
     // if not exist throw exception
     $this->img = @imagecreatefrompng($path_to_baselayerImage) or $this->throwException(__FUNCTION__, 2,  'Can\'t create base layer image');
     //imageAlphaBlending($this->img, true);
     imageSaveAlpha($this->img, true);
   }
 
-  function drawLayer($path_to_layerImage, $x = 0, $y = 0) {
+  public function drawLayer($path_to_layerImage, $x = 0, $y = 0) {
     $layer = @imagecreatefrompng($path_to_layerImage) or $this->throwException(__FUNCTION__, 3,  'Can\'t create layer image');
     @imagecopy($this->img, $layer, $x, $y, 0, 0, imagesx($layer), imagesy($layer)) or $this->throwException(__FUNCTION__, 4,  'Can\'t copy layer image to base layer image');
     @imagedestroy($layer) or $this->throwException(__FUNCTION__, 5,  'Can\'t destroy temporary layer image');
   }
 
-  function legacy_initFont($path_to_font) {
+  public function legacy_initFont($path_to_font) {
     $this->font = trck_BF_Load($path_to_font);
   }
 
-  function getInfo() {
+  private function getInfo() {
     global $table_prefix;
     $this->mysql_init();
 
@@ -347,7 +347,7 @@ class TorrentBar {
     }
   }
 
-  function mysql_init() {
+  private function mysql_init() {
     global $dbhost, $dbname, $dbuser, $dbpasswd;
 
     //echo $dbhost ."<br>". $dbname ."<br>". $dbuser ."<br>". $dbpasswd;
@@ -360,7 +360,7 @@ class TorrentBar {
     return $link;
   }
 
-  function getPostfixID($val) {
+  public function getPostfixID($val) {
     $res = 'b';
     foreach ($this->systems_data[$this->system] as $key=>$data) {
       //echo $key .'---'. $data ."!!!";
@@ -374,12 +374,12 @@ class TorrentBar {
     return $res;
   }
 
-  function getPostfixName($postfix_id) {
+  public function getPostfixName($postfix_id) {
     //echo  $this->systems_data[$this->system][$postfix_id]['name'];
     return $this->systems_data[$this->system][$postfix_id]['name'];
   }
 
-  function roundValue($val) {
+  public function roundValue($val) {
     $dot_pos = strpos((string) $val, ".");
     if ($dot_pos > 0) {
         return (string) round(substr((string) $val, 0, $dot_pos+1+2), 2);
@@ -388,23 +388,23 @@ class TorrentBar {
     }
   }
 
-  function convertValue($val) {
+  public function convertValue($val) {
     $postfix_id = $this->getPostfixID($val);
     return $val / $this->systems_data[$this->system][$postfix_id]['val'];
   }
 
-  function drawText($x, $y, $text) {
+  public function drawText($x, $y, $text) {
     $img = trck_BF_CreateTextWithStroke($this->font, $text);
     @imagecopy($this->img, $img, $x, $y, 0, 0, imagesx($img), imagesy($img)) or $this->throwException(__FUNCTION__, 12,  'Can\'t copy temporary image to base layer image');
   }
 
-  function drawRating($x, $y) {
+  public function drawRating($x, $y) {
     $val = $this->roundValue($this->data['rating_counter']);
     $val = strval($val);
     $this->drawText($x, $y, $val);
   }
 
-  function drawUpload($x, $y, $draw_postfix = true) {
+  public function drawUpload($x, $y, $draw_postfix = true) {
     $postfix_id = $this->getPostfixID($this->data['upload_counter']);
     $val = $this->convertValue($this->data['upload_counter']);
     $val = $this->roundValue($val);
@@ -416,7 +416,7 @@ class TorrentBar {
     $this->drawText($x, $y, $val);
   }
 
-  function drawDownload($x, $y, $draw_postfix = true) {
+  public function drawDownload($x, $y, $draw_postfix = true) {
     $postfix_id = $this->getPostfixID($this->data['download_counter']);
     $val = $this->convertValue($this->data['download_counter']);
     $val = $this->roundValue($val);
@@ -428,7 +428,7 @@ class TorrentBar {
     $this->drawText($x, $y, $val);
   }
 
-  function useTemplate($template_name) {
+  public function useTemplate($template_name) {
     $allowed_letters = '1234567890QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm_';
 
     if (! file_exists('templates/' . $template_name)) {
@@ -446,14 +446,14 @@ class TorrentBar {
     return 'templates/' . $template_name . '/template.php';
   }
 
-  function Finalize() {
+  public function Finalize() {
     header("Content-type: image/png");// or $this->throwException(__FUNCTION__, 15,  'Can\'t send header');
     @imagepng($this->img) or $this->throwException(__FUNCTION__, 16,  'Can\'t output image');
     @imagedestroy($this->img) or $this->throwException(__FUNCTION__, 17,  'Can\'t destroy image');
     //trck_BF_Unload($this->font);
   }
 
-  function changePostfixName($postfixID, $newName) {
+  public function changePostfixName($postfixID, $newName) {
     if (! isset($this->systems_data[$this->system][$postfixID])) {
       //throw Exception (Not exists)
       return null;
@@ -461,10 +461,9 @@ class TorrentBar {
     $this->systems_data[$this->system][$postfixID]['name'] = $newName;
   }
 
-  function throwException($function, $code, $message) {
-    //$E = new Exception('TorrentBar exception in ' . $function . ': ' . $message, $code);
-    //throw $E;
-    die('TorrentBar exception in ' . $function . ': ' . $message . ' (Code: ' . $code . ')');
+  private function throwException($function, $code, $message) {
+    $E = new Exception('TorrentBar exception in ' . $function . ': ' . $message, $code);
+    throw $E;
   }
 }
 
@@ -478,7 +477,13 @@ $style_id = getStyle();
 define('BB_ROOT', '1');
 include($torrentpier_config_path);
 
-$torrentbar = new TorrentBar($user_id);
-$template = $torrentbar->useTemplate($style_id);
-include $template;
-$torrentbar->Finalize();
+try {
+
+  $torrentbar = new TorrentBar($user_id);
+  $template = $torrentbar->useTemplate($style_id);
+  include $template;
+  $torrentbar->Finalize();
+
+} catch(Exception $E) {
+  echo $E->getMessage() . " (Code:" . $E->getCode() . ")";
+}
